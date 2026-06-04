@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
+import { exportMonthlyReport } from '../utils/exportExcel';
 
 const emptyItemForm = { name: '', stock: 0, costPerUnit: '', minStock: '' };
 const emptyStockInForm = { quantity: '', supplier: '', note: '', loggedBy: 'Admin' };
@@ -20,6 +21,10 @@ export default function Consumables() {
 
   const [consumeItem, setConsumeItem] = useState(null);
   const [consumeForm, setConsumeForm] = useState(emptyConsumeForm);
+
+  const [showExport, setShowExport] = useState(false);
+  const [exportFrom, setExportFrom] = useState('');
+  const [exportTo, setExportTo] = useState('');
 
   useEffect(() => {
     fetchCategories();
@@ -47,6 +52,23 @@ export default function Consumables() {
       setItems(res.data);
     } catch (e) {
       setError('Failed to load items');
+    }
+  }
+
+  async function handleExport(e) {
+    e.preventDefault();
+    try {
+      const [txRes, itemsRes] = await Promise.all([
+        api.get('/transactions'),
+        api.get('/items'),
+      ]);
+      const consumableItems = itemsRes.data.filter(
+        i => i.category.type === 'CONSUMABLE'
+      );
+      exportMonthlyReport(consumableItems, txRes.data, exportFrom, exportTo);
+      setShowExport(false);
+    } catch (e) {
+      setError('Failed to export report');
     }
   }
 
@@ -127,8 +149,14 @@ export default function Consumables() {
         ))}
       </div>
 
-      {/* Add Item Button */}
-      <div className="flex justify-end mb-4">
+      {/* Export + Add Item Buttons */}
+      <div className="flex justify-end gap-3 mb-4">
+        <button
+          onClick={() => setShowExport(!showExport)}
+          className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg"
+        >
+          {showExport ? 'Cancel' : '📊 Export Report'}
+        </button>
         <button
           onClick={() => setShowAddItem(!showAddItem)}
           className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg"
@@ -136,6 +164,46 @@ export default function Consumables() {
           {showAddItem ? 'Cancel' : '+ Add Item'}
         </button>
       </div>
+
+      {/* Export Form */}
+      {showExport && (
+        <div className="bg-white rounded-xl border border-green-200 shadow-sm p-6 mb-6">
+          <h3 className="text-base font-semibold text-gray-700 mb-1">Export Monthly Report</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Select a date range to export consumption and stock data to Excel.
+          </p>
+          <form onSubmit={handleExport} className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">From Date</label>
+              <input
+                type="date"
+                value={exportFrom}
+                onChange={e => setExportFrom(e.target.value)}
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">To Date</label>
+              <input
+                type="date"
+                value={exportTo}
+                onChange={e => setExportTo(e.target.value)}
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                type="submit"
+                className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg"
+              >
+                Download Excel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Add Item Form */}
       {showAddItem && (
