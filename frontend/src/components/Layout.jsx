@@ -6,6 +6,7 @@ const navItems = [
   { path: '/consumables', label: 'Consumables', icon: '📦' },
   { path: '/engineering', label: 'Engineering', icon: '🔧' },
   { path: '/activity', label: 'Activity Log', icon: '📋' },
+  // { path: '/users', label: 'Users', icon: '👤'},
 ];
 
 export default function Layout() {
@@ -40,9 +41,22 @@ export default function Layout() {
         </nav>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-700">
+        {/* Footer */}
+      <div className="px-6 py-4 border-t border-gray-700">
+        <p className="text-xs text-gray-500 mb-2">v1.0.0</p>
+        <button
+          onClick={() => {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+          }}
+          className="text-xs text-gray-400 hover:text-red-400 transition-colors"
+        >
+          Sign Out
+        </button>
+      </div>
+        {/* <div className="px-6 py-4 border-t border-gray-700">
           <p className="text-xs text-gray-500">v1.0.0</p>
-        </div>
+        </div> */}
       </aside>
 
       {/* Main content */}

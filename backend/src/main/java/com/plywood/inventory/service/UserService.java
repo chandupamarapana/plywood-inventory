@@ -6,6 +6,8 @@ import com.plywood.inventory.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserService {
 
@@ -51,5 +53,14 @@ public class UserService {
         }
 
         return jwtService.generateToken(username);
+    }
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public void deleteUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        userRepository.delete(user);
     }
 }
