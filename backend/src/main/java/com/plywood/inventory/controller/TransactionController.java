@@ -85,4 +85,9 @@ public class TransactionController {
     public List<Borrow> getActiveBorrowsByItem(@PathVariable Long itemId) {
         return transactionService.getActiveBorrowsByItem(itemId);
     }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
+        transactionService.deleteTransaction(id);
+        return ResponseEntity.noContent().build();
+    }
 }

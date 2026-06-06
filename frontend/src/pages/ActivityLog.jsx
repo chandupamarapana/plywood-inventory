@@ -13,6 +13,8 @@ export default function ActivityLog() {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
 
   const [filterType, setFilterType] = useState('ALL');
   const [filterDate, setFilterDate] = useState('');
@@ -40,15 +42,8 @@ export default function ActivityLog() {
 
   function applyFilters() {
     let result = [...transactions];
-
-    if (filterType !== 'ALL') {
-      result = result.filter(tx => tx.type === filterType);
-    }
-
-    if (filterDate) {
-      result = result.filter(tx => tx.date === filterDate);
-    }
-
+    if (filterType !== 'ALL') result = result.filter(tx => tx.type === filterType);
+    if (filterDate) result = result.filter(tx => tx.date === filterDate);
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(tx =>
@@ -59,7 +54,6 @@ export default function ActivityLog() {
         (tx.loggedBy && tx.loggedBy.toLowerCase().includes(q))
       );
     }
-
     setFiltered(result);
   }
 
@@ -69,10 +63,23 @@ export default function ActivityLog() {
     setSearch('');
   }
 
+  async function handleDelete(id) {
+    setDeletingId(id);
+    try {
+      await api.delete(`/transactions/${id}`);
+      setTransactions(prev => prev.filter(tx => tx.id !== id));
+      setConfirmId(null);
+    } catch (e) {
+      setError('Failed to delete transaction. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   if (loading) return <p className="text-sm text-gray-500">Loading...</p>;
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Activity Log</h2>
 
       {error && (
@@ -148,11 +155,15 @@ export default function ActivityLog() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Details</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Logged By</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filtered.map(tx => {
                 const { label, cls } = TYPE_LABELS[tx.type] || { label: tx.type, cls: 'bg-gray-100 text-gray-600' };
+                const isConfirming = confirmId === tx.id;
+                const isDeleting = deletingId === tx.id;
+
                 return (
                   <tr key={tx.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
@@ -172,6 +183,33 @@ export default function ActivityLog() {
                     </td>
                     <td className="px-4 py-3 text-gray-500">{tx.loggedBy || '—'}</td>
                     <td className="px-4 py-3 text-gray-500">{tx.date}</td>
+                    <td className="px-4 py-3">
+                      {isConfirming ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">Sure?</span>
+                          <button
+                            onClick={() => handleDelete(tx.id)}
+                            disabled={isDeleting}
+                            className="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded disabled:opacity-50"
+                          >
+                            {isDeleting ? '...' : 'Yes'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmId(null)}
+                            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmId(tx.id)}
+                          className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}

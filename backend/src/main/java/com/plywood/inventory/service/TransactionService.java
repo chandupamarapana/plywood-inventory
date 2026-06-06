@@ -4,6 +4,7 @@ import com.plywood.inventory.model.Borrow;
 import com.plywood.inventory.model.Item;
 import com.plywood.inventory.model.Transaction;
 import com.plywood.inventory.repository.BorrowRepository;
+import com.plywood.inventory.repository.ItemRepository;
 import com.plywood.inventory.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
@@ -15,13 +16,16 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final BorrowRepository borrowRepository;
     private final ItemService itemService;
+    private final ItemRepository itemRepository;
 
     public TransactionService(TransactionRepository transactionRepository,
                               BorrowRepository borrowRepository,
-                              ItemService itemService) {
+                              ItemService itemService,
+                              ItemRepository itemRepository) {
         this.transactionRepository = transactionRepository;
         this.borrowRepository = borrowRepository;
         this.itemService = itemService;
+        this.itemRepository = itemRepository;
     }
 
     public List<Transaction> getAllTransactions() {
@@ -100,5 +104,38 @@ public class TransactionService {
 
     public List<Borrow> getActiveBorrowsByItem(Long itemId) {
         return borrowRepository.findByItemIdAndDateInIsNull(itemId);
+    }
+    public void deleteTransaction(Long id) {
+        Transaction tx = transactionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+
+        Item item = tx.getItem();
+
+        // Reverse the stock effect
+        switch (tx.getType()) {
+            case "STOCK_IN":
+                item.setStock(item.getStock() - tx.getQuantity());
+                break;
+            case "CONSUMPTION":
+                item.setStock(item.getStock() + tx.getQuantity());
+                break;
+            case "BORROW":
+                item.setStock(item.getStock() + tx.getQuantity());
+                // also close any open borrow record
+                borrowRepository.findByItemIdAndDateInIsNull(item.getId())
+                        .stream()
+                        .filter(b -> b.getTransaction().getId().equals(id))
+                        .forEach(b -> {
+                            b.setDateIn(java.time.LocalDate.now());
+                            borrowRepository.save(b);
+                        });
+                break;
+            case "RETURN":
+                item.setStock(item.getStock() - tx.getQuantity());
+                break;
+        }
+
+        itemRepository.save(item);
+        transactionRepository.deleteById(id);
     }
 }
