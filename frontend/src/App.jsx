@@ -7,6 +7,7 @@ import Consumables from './pages/Consumables';
 import Engineering from './pages/Engineering';
 import ActivityLog from './pages/ActivityLog';
 import Login from './pages/Login';
+import Users from './pages/Users'
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="consumables" element={<Consumables />} />
           <Route path="engineering" element={<Engineering />} />
           <Route path="activity" element={<ActivityLog />} />
+          <Route path="users" element={<Users />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
