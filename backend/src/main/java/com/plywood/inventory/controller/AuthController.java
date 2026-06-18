@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -17,40 +18,43 @@ public class AuthController {
 
     private final UserService userService;
 
-    public AuthController(
-            UserService userService
-    ) {
+    public AuthController(UserService userService) {
         this.userService = userService;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<String> register(
-            @RequestBody RegisterRequest request
-    ) {
+    // Create a brand new company + first admin user
+    // You call this from Postman when onboarding a new client
+    @PostMapping("/setup")
+    public ResponseEntity<String> setup(@RequestBody Map<String, String> body) {
+        userService.registerNewCompany(
+                body.get("companyName"),
+                body.get("username"),
+                body.get("password")
+        );
+        return ResponseEntity.ok("Company and admin user created successfully");
+    }
 
+    // Add a user to the current logged in user's company
+    @PostMapping("/register")
+    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
         userService.register(
                 request.getUsername(),
-                request.getPassword()
+                request.getPassword(),
+                request.getRole(),
+                userService.getCurrentCompany().getId()
         );
-
-        return ResponseEntity.ok(
-                "User registered successfully"
-        );
+        return ResponseEntity.ok("User registered successfully");
     }
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
-            @RequestBody LoginRequest request
-    ) {
 
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         String token = userService.login(
                 request.getUsername(),
                 request.getPassword()
         );
-
-        return ResponseEntity.ok(
-                new LoginResponse(token)
-        );
+        return ResponseEntity.ok(new LoginResponse(token));
     }
+
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());

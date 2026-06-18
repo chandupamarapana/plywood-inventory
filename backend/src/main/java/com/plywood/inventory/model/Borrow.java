@@ -19,6 +19,10 @@ public class Borrow {
     @JoinColumn(name = "transaction_id")
     private Transaction transaction;
 
+    @ManyToOne
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
+
     @Column(nullable = false)
     private Integer quantity;
 
@@ -28,15 +32,15 @@ public class Borrow {
     @Column(nullable = false)
     private LocalDate dateOut;
 
-    private LocalDate dateIn; // null means still out on loan
+    private LocalDate dateIn;
 
-    // Constructors
     public Borrow() {}
 
-    public Borrow(Item item, Transaction transaction, Integer quantity,
+    public Borrow(Item item, Transaction transaction, Company company, Integer quantity,
                   String borrower, LocalDate dateOut) {
         this.item = item;
         this.transaction = transaction;
+        this.company = company;
         this.quantity = quantity;
         this.borrower = borrower;
         this.dateOut = dateOut;
@@ -52,6 +56,9 @@ public class Borrow {
 
     public Transaction getTransaction() { return transaction; }
     public void setTransaction(Transaction transaction) { this.transaction = transaction; }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
 
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }

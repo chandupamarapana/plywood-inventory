@@ -17,18 +17,22 @@ public class Category {
     private String type; // CONSUMABLE or ENGINEERING
 
     @Column(nullable = false)
-    private String unit; // bags, pcs, kg etc
+    private String unit;
 
     private Integer lowAlert;
 
-    // Constructors
+    @ManyToOne
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
+
     public Category() {}
 
-    public Category(String name, String type, String unit, Integer lowAlert) {
+    public Category(String name, String type, String unit, Integer lowAlert, Company company) {
         this.name = name;
         this.type = type;
         this.unit = unit;
         this.lowAlert = lowAlert;
+        this.company = company;
     }
 
     // Getters and Setters
@@ -46,4 +50,7 @@ public class Category {
 
     public Integer getLowAlert() { return lowAlert; }
     public void setLowAlert(Integer lowAlert) { this.lowAlert = lowAlert; }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
 }

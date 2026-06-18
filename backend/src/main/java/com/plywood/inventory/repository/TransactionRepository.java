@@ -7,6 +7,6 @@ import java.util.List;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
-    List<Transaction> findByItemId(Long itemId);
-    List<Transaction> findAllByOrderByDateDesc();
+    List<Transaction> findByItemIdAndCompanyId(Long itemId, Long companyId);
+    List<Transaction> findByCompanyIdOrderByDateDesc(Long companyId);
 }

@@ -1,6 +1,7 @@
 package com.plywood.inventory.service;
 
 import com.plywood.inventory.model.Category;
+import com.plywood.inventory.model.Company;
 import com.plywood.inventory.model.Item;
 import com.plywood.inventory.repository.ItemRepository;
 import org.springframework.stereotype.Service;
@@ -11,18 +12,23 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
     private final CategoryService categoryService;
+    private final UserService userService;
 
-    public ItemService(ItemRepository itemRepository, CategoryService categoryService) {
+    public ItemService(ItemRepository itemRepository, CategoryService categoryService,
+                       UserService userService) {
         this.itemRepository = itemRepository;
         this.categoryService = categoryService;
+        this.userService = userService;
     }
 
     public List<Item> getAllItems() {
-        return itemRepository.findAll();
+        Long companyId = userService.getCurrentCompany().getId();
+        return itemRepository.findByCompanyId(companyId);
     }
 
     public List<Item> getItemsByCategory(Long categoryId) {
-        return itemRepository.findByCategoryId(categoryId);
+        Long companyId = userService.getCurrentCompany().getId();
+        return itemRepository.findByCategoryIdAndCompanyId(categoryId, companyId);
     }
 
     public Item getItemById(Long id) {
@@ -32,7 +38,9 @@ public class ItemService {
 
     public Item createItem(Long categoryId, Item item) {
         Category category = categoryService.getCategoryById(categoryId);
+        Company company = userService.getCurrentCompany();
         item.setCategory(category);
+        item.setCompany(company);
         return itemRepository.save(item);
     }
 

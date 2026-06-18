@@ -14,6 +14,10 @@ public class Item {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
+    @ManyToOne
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
+
     @Column(nullable = false)
     private String name;
 
@@ -23,11 +27,11 @@ public class Item {
 
     private Integer minStock;
 
-    // Constructors
     public Item() {}
 
-    public Item(Category category, String name, Integer stock, Integer costPerUnit, Integer minStock) {
+    public Item(Category category, Company company, String name, Integer stock, Integer costPerUnit, Integer minStock) {
         this.category = category;
+        this.company = company;
         this.name = name;
         this.stock = stock;
         this.costPerUnit = costPerUnit;
@@ -40,6 +44,9 @@ public class Item {
 
     public Category getCategory() { return category; }
     public void setCategory(Category category) { this.category = category; }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

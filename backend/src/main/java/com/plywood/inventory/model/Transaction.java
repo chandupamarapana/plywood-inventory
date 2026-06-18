@@ -15,6 +15,10 @@ public class Transaction {
     @JoinColumn(name = "item_id", nullable = false)
     private Item item;
 
+    @ManyToOne
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
+
     @Column(nullable = false)
     private String type; // STOCK_IN, CONSUMPTION, BORROW, RETURN
 
@@ -31,12 +35,12 @@ public class Transaction {
 
     private String loggedBy;
 
-    // Constructors
     public Transaction() {}
 
-    public Transaction(Item item, String type, Integer quantity, LocalDate date,
+    public Transaction(Item item, Company company, String type, Integer quantity, LocalDate date,
                        String supplier, String note, String borrower, String loggedBy) {
         this.item = item;
+        this.company = company;
         this.type = type;
         this.quantity = quantity;
         this.date = date;
@@ -52,6 +56,9 @@ public class Transaction {
 
     public Item getItem() { return item; }
     public void setItem(Item item) { this.item = item; }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }

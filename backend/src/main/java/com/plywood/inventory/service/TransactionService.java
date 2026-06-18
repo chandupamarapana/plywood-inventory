@@ -1,6 +1,7 @@
 package com.plywood.inventory.service;
 
 import com.plywood.inventory.model.Borrow;
+import com.plywood.inventory.model.Company;
 import com.plywood.inventory.model.Item;
 import com.plywood.inventory.model.Transaction;
 import com.plywood.inventory.repository.BorrowRepository;
@@ -17,33 +18,39 @@ public class TransactionService {
     private final BorrowRepository borrowRepository;
     private final ItemService itemService;
     private final ItemRepository itemRepository;
+    private final UserService userService;
 
     public TransactionService(TransactionRepository transactionRepository,
                               BorrowRepository borrowRepository,
                               ItemService itemService,
-                              ItemRepository itemRepository) {
+                              ItemRepository itemRepository,
+                              UserService userService) {
         this.transactionRepository = transactionRepository;
         this.borrowRepository = borrowRepository;
         this.itemService = itemService;
         this.itemRepository = itemRepository;
+        this.userService = userService;
     }
 
     public List<Transaction> getAllTransactions() {
-        return transactionRepository.findAllByOrderByDateDesc();
+        Long companyId = userService.getCurrentCompany().getId();
+        return transactionRepository.findByCompanyIdOrderByDateDesc(companyId);
     }
 
     public List<Transaction> getTransactionsByItem(Long itemId) {
-        return transactionRepository.findByItemId(itemId);
+        Long companyId = userService.getCurrentCompany().getId();
+        return transactionRepository.findByItemIdAndCompanyId(itemId, companyId);
     }
 
     // Stock In — adds to stock
     public Transaction logStockIn(Long itemId, Integer quantity, String supplier,
                                   String note, String loggedBy) {
+        Company company = userService.getCurrentCompany();
         Item item = itemService.getItemById(itemId);
         item.setStock(item.getStock() + quantity);
         itemService.updateStock(itemId, item.getStock());
 
-        Transaction tx = new Transaction(item, "STOCK_IN", quantity,
+        Transaction tx = new Transaction(item, company, "STOCK_IN", quantity,
                 LocalDate.now(), supplier, note, null, loggedBy);
         return transactionRepository.save(tx);
     }
@@ -51,13 +58,14 @@ public class TransactionService {
     // Consumption — reduces stock
     public Transaction logConsumption(Long itemId, Integer quantity,
                                       String note, String loggedBy) {
+        Company company = userService.getCurrentCompany();
         Item item = itemService.getItemById(itemId);
         if (quantity > item.getStock()) {
             throw new RuntimeException("Not enough stock. Available: " + item.getStock());
         }
         itemService.updateStock(itemId, item.getStock() - quantity);
 
-        Transaction tx = new Transaction(item, "CONSUMPTION", quantity,
+        Transaction tx = new Transaction(item, company, "CONSUMPTION", quantity,
                 LocalDate.now(), null, note, null, loggedBy);
         return transactionRepository.save(tx);
     }
@@ -65,17 +73,18 @@ public class TransactionService {
     // Borrow — reduces stock and creates borrow record
     public Transaction logBorrow(Long itemId, Integer quantity,
                                  String borrower, String loggedBy) {
+        Company company = userService.getCurrentCompany();
         Item item = itemService.getItemById(itemId);
         if (quantity > item.getStock()) {
             throw new RuntimeException("Not enough stock. Available: " + item.getStock());
         }
         itemService.updateStock(itemId, item.getStock() - quantity);
 
-        Transaction tx = new Transaction(item, "BORROW", quantity,
+        Transaction tx = new Transaction(item, company, "BORROW", quantity,
                 LocalDate.now(), null, null, borrower, loggedBy);
         tx = transactionRepository.save(tx);
 
-        Borrow borrow = new Borrow(item, tx, quantity, borrower, LocalDate.now());
+        Borrow borrow = new Borrow(item, tx, company, quantity, borrower, LocalDate.now());
         borrowRepository.save(borrow);
 
         return tx;
@@ -83,6 +92,7 @@ public class TransactionService {
 
     // Return — adds stock back and closes borrow record
     public Transaction logReturn(Long borrowId, String loggedBy) {
+        Company company = userService.getCurrentCompany();
         Borrow borrow = borrowRepository.findById(borrowId)
                 .orElseThrow(() -> new RuntimeException("Borrow record not found"));
 
@@ -92,26 +102,28 @@ public class TransactionService {
         Item item = borrow.getItem();
         itemService.updateStock(item.getId(), item.getStock() + borrow.getQuantity());
 
-        Transaction tx = new Transaction(item, "RETURN", borrow.getQuantity(),
+        Transaction tx = new Transaction(item, company, "RETURN", borrow.getQuantity(),
                 LocalDate.now(), null, null, borrow.getBorrower(), loggedBy);
         return transactionRepository.save(tx);
     }
 
     // Active borrows — items still out on loan
     public List<Borrow> getActiveBorrows() {
-        return borrowRepository.findByDateInIsNull();
+        Long companyId = userService.getCurrentCompany().getId();
+        return borrowRepository.findByDateInIsNullAndCompanyId(companyId);
     }
 
     public List<Borrow> getActiveBorrowsByItem(Long itemId) {
-        return borrowRepository.findByItemIdAndDateInIsNull(itemId);
+        Long companyId = userService.getCurrentCompany().getId();
+        return borrowRepository.findByItemIdAndDateInIsNullAndCompanyId(itemId, companyId);
     }
+
     public void deleteTransaction(Long id) {
         Transaction tx = transactionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transaction not found"));
 
         Item item = tx.getItem();
 
-        // Reverse the stock effect
         switch (tx.getType()) {
             case "STOCK_IN":
                 item.setStock(item.getStock() - tx.getQuantity());
@@ -121,12 +133,11 @@ public class TransactionService {
                 break;
             case "BORROW":
                 item.setStock(item.getStock() + tx.getQuantity());
-                // also close any open borrow record
-                borrowRepository.findByItemIdAndDateInIsNull(item.getId())
+                borrowRepository.findByItemIdAndDateInIsNullAndCompanyId(item.getId(), tx.getCompany().getId())
                         .stream()
                         .filter(b -> b.getTransaction().getId().equals(id))
                         .forEach(b -> {
-                            b.setDateIn(java.time.LocalDate.now());
+                            b.setDateIn(LocalDate.now());
                             borrowRepository.save(b);
                         });
                 break;
