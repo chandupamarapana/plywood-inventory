@@ -67,6 +67,7 @@ public class ItemService {
 
     public void deleteItem(Long id) {
         Item item = getItemById(id);
+        Long categoryId = item.getCategory().getId();
 
         // Delete all transactions tied to this item first
         transactionRepository.deleteByItemId(id);
@@ -75,5 +76,12 @@ public class ItemService {
         borrowRepository.deleteByItemId(id);
 
         itemRepository.deleteById(id);
+
+        // If this was the last item in the category, delete the category too
+        List<Item> remainingItems = itemRepository.findByCategoryIdAndCompanyId(
+                categoryId, item.getCompany().getId());
+        if (remainingItems.isEmpty()) {
+            categoryService.deleteCategory(categoryId);
+        }
     }
 }
