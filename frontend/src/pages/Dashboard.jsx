@@ -19,7 +19,7 @@ export default function Dashboard() {
         api.get('/transactions/borrows/active'),
       ]);
       setItems(itemsRes.data);
-      setTransactions(txRes.data.slice().reverse());
+      setTransactions(txRes.data);
       setActiveBorrows(borrowsRes.data);
     } catch (e) {
       console.error('Dashboard load error', e);

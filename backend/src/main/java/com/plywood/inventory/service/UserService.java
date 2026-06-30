@@ -90,11 +90,13 @@ public class UserService {
     }
 
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        Long companyId = getCurrentCompany().getId();
+        return userRepository.findByCompanyId(companyId);
     }
 
     public void deleteUser(String username) {
-        User user = userRepository.findByUsername(username)
+        Long companyId = getCurrentCompany().getId();
+        User user = userRepository.findByUsernameAndCompanyId(username, companyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         userRepository.delete(user);
     }

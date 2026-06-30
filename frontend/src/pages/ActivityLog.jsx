@@ -31,8 +31,7 @@ export default function ActivityLog() {
   async function fetchTransactions() {
     try {
       const res = await api.get('/transactions');
-      const reversed = res.data.slice().reverse();
-      setTransactions(reversed);
+      setTransactions(res.data);
     } catch (e) {
       setError('Failed to load transactions');
     } finally {

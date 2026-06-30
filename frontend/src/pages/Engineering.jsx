@@ -125,6 +125,14 @@ export default function Engineering() {
       await api.delete(`/items/${id}`);
       setItems((prev) => prev.filter((i) => i.id !== id));
       setConfirmDeleteId(null);
+      // Refresh categories in case the backend auto-deleted an empty one
+      const catRes = await api.get("/categories/type/ENGINEERING");
+      setCategories(catRes.data);
+      if (catRes.data.length > 0) {
+        setSelectedCategoryId((prev) =>
+          catRes.data.find((c) => c.id === prev) ? prev : catRes.data[0].id
+        );
+      }
     } catch (e) {
       setError("Failed to delete item. It may have transactions linked to it.");
     } finally {
@@ -530,7 +538,7 @@ export default function Engineering() {
                                   minStock: item.minStock,
                                 });
                                 setStockInItem(null);
-                                setConsumeItem(null);
+                                setBorrowItem(null);
                               }}
                               className="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs font-medium px-3 py-1 rounded-lg"
                             >

@@ -8,6 +8,7 @@ import com.plywood.inventory.repository.BorrowRepository;
 import com.plywood.inventory.repository.ItemRepository;
 import com.plywood.inventory.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -118,6 +119,7 @@ public class TransactionService {
         return borrowRepository.findByItemIdAndDateInIsNullAndCompanyId(itemId, companyId);
     }
 
+    @Transactional
     public void deleteTransaction(Long id) {
         Transaction tx = transactionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transaction not found"));
@@ -132,14 +134,14 @@ public class TransactionService {
                 item.setStock(item.getStock() + tx.getQuantity());
                 break;
             case "BORROW":
+                // Restore stock and delete the Borrow row that references this transaction.
+                // Closing it (setting dateIn) is not enough — the FK on borrows.transaction_id
+                // prevents deleting the Transaction while a Borrow row still references it.
                 item.setStock(item.getStock() + tx.getQuantity());
                 borrowRepository.findByItemIdAndDateInIsNullAndCompanyId(item.getId(), tx.getCompany().getId())
                         .stream()
                         .filter(b -> b.getTransaction().getId().equals(id))
-                        .forEach(b -> {
-                            b.setDateIn(LocalDate.now());
-                            borrowRepository.save(b);
-                        });
+                        .forEach(borrowRepository::delete);
                 break;
             case "RETURN":
                 item.setStock(item.getStock() - tx.getQuantity());

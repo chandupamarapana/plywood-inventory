@@ -7,6 +7,7 @@ import com.plywood.inventory.repository.BorrowRepository;
 import com.plywood.inventory.repository.ItemRepository;
 import com.plywood.inventory.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
@@ -65,15 +66,16 @@ public class ItemService {
         return itemRepository.save(item);
     }
 
+    @Transactional
     public void deleteItem(Long id) {
         Item item = getItemById(id);
         Long categoryId = item.getCategory().getId();
 
-        // Delete all transactions tied to this item first
-        transactionRepository.deleteByItemId(id);
-
-        // Delete any borrow records tied to this item
+        // Borrows reference transactions via FK — must go first
         borrowRepository.deleteByItemId(id);
+
+        // Transactions reference item via FK — must go before the item
+        transactionRepository.deleteByItemId(id);
 
         itemRepository.deleteById(id);
 
