@@ -50,6 +50,12 @@ export default function Engineering() {
     if (selectedCategoryId) fetchItems(selectedCategoryId);
   }, [selectedCategoryId]);
 
+  useEffect(() => {
+    if (categories.length === 0) {
+      setIsNewCategory(true);
+    }
+  }, [categories]);
+
   async function fetchCategories() {
     try {
       const res = await api.get("/categories/type/ENGINEERING");
