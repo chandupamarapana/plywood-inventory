@@ -9,4 +9,5 @@ import java.util.List;
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
     List<Transaction> findByItemIdAndCompanyId(Long itemId, Long companyId);
     List<Transaction> findByCompanyIdOrderByDateDesc(Long companyId);
+    void deleteByItemId(Long itemId);
 }

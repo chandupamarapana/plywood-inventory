@@ -10,4 +10,5 @@ public interface BorrowRepository extends JpaRepository<Borrow, Long> {
     List<Borrow> findByItemIdAndCompanyId(Long itemId, Long companyId);
     List<Borrow> findByItemIdAndDateInIsNullAndCompanyId(Long itemId, Long companyId);
     List<Borrow> findByDateInIsNullAndCompanyId(Long companyId);
+    void deleteByItemId(Long itemId);
 }

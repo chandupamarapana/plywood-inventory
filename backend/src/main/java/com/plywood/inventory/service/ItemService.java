@@ -3,7 +3,9 @@ package com.plywood.inventory.service;
 import com.plywood.inventory.model.Category;
 import com.plywood.inventory.model.Company;
 import com.plywood.inventory.model.Item;
+import com.plywood.inventory.repository.BorrowRepository;
 import com.plywood.inventory.repository.ItemRepository;
+import com.plywood.inventory.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -13,12 +15,17 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final CategoryService categoryService;
     private final UserService userService;
+    private final TransactionRepository transactionRepository;
+    private final BorrowRepository borrowRepository;
 
     public ItemService(ItemRepository itemRepository, CategoryService categoryService,
-                       UserService userService) {
+                       UserService userService, TransactionRepository transactionRepository,
+                       BorrowRepository borrowRepository) {
         this.itemRepository = itemRepository;
         this.categoryService = categoryService;
         this.userService = userService;
+        this.transactionRepository = transactionRepository;
+        this.borrowRepository = borrowRepository;
     }
 
     public List<Item> getAllItems() {
@@ -59,6 +66,14 @@ public class ItemService {
     }
 
     public void deleteItem(Long id) {
+        Item item = getItemById(id);
+
+        // Delete all transactions tied to this item first
+        transactionRepository.deleteByItemId(id);
+
+        // Delete any borrow records tied to this item
+        borrowRepository.deleteByItemId(id);
+
         itemRepository.deleteById(id);
     }
 }
